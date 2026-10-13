@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pong Game</title>
+
+    <style>
+        body {
+            margin: 0;
+            background: #111;
+            color: white;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .game-container {
+            text-align: center;
+        }
+
+        canvas {
+            background: black;
+            border: 2px solid white;
+            max-width: 95vw;
+            height: auto;
+        }
+
+        p {
+            color: #bbb;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="game-container">
+        <h2>Pong Game</h2>
+        <canvas id="game" width="600" height="400"></canvas>
+        <p>Move your paddle using W and S keys</p>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("game");
+        const ctx = canvas.getContext("2d");
+
+        const player = { x: 20, y: 170, w: 10, h: 60 };
+        const enemy = { x: 570, y: 170, w: 10, h: 60 };
+        const ball = { x: 290, y: 190, w: 15, h: 15 };
+
+        let bx = 5, by = 5;
+        let score1 = 0, score2 = 0;
+
+        const keys = {};
+
+        document.addEventListener("keydown", e => {
+            keys[e.key.toLowerCase()] = true;
+
+            if (["w", "s", " "].includes(e.key.toLowerCase())) {
+                e.preventDefault();
+            }
+        });
+
+        document.addEventListener("keyup", e => {
+            keys[e.key.toLowerCase()] = false;
+        });
+
+        function collision(a, b) {
+            return a.x < b.x + b.w &&
+                   a.x + a.w > b.x &&
+                   a.y < b.y + b.h &&
+                   a.y + a.h > b.y;
+        }
+
+        function resetBall(direction) {
+            ball.x = 292.5;
+            ball.y = 192.5;
+            bx = direction * 5;
+            by = Math.random() < 0.5 ? -5 : 5;
+        }
+
+        function update() {
+            // Player movement
+            if (keys["s"]) player.y += 5;
+            if (keys["w"]) player.y -= 5;
+
+            player.y = Math.max(0, Math.min(340, player.y));
+
+            // Opponent follows the ball
+            if (enemy.y + enemy.h / 2 < ball.y + ball.h / 2) {
+                enemy.y += 4;
+            } else {
+                enemy.y -= 4;
+            }
+
+            enemy.y = Math.max(0, Math.min(340, enemy.y));
+
+            // Ball movement
+            ball.x += bx;
+            ball.y += by;
+
+            // Top and bottom collision
+            if (ball.y <= 0 || ball.y + ball.h >= 400) {
+                by *= -1;
+            }
+
+            // Paddle collision
+            if (
+                (collision(ball, player) && bx < 0) ||
+                (collision(ball, enemy) && bx > 0)
+            ) {
+                bx *= -1;
+            }
+
+            // Opponent scores
+            if (ball.x <= 0) {
+                score2++;
+                resetBall(1);
+            }
+
+            // Player scores
+            if (ball.x + ball.w >= 600) {
+                score1++;
+                resetBall(-1);
+            }
+        }
+
+        function draw() {
+            ctx.fillStyle = "black";
+            ctx.fillRect(0, 0, 600, 400);
+
+            // Score
+            ctx.fillStyle = "white";
+            ctx.font = "24px Arial";
+            ctx.textAlign = "center";
+            ctx.fillText(
+                `Player: ${score1}  Opponent: ${score2}`,
+                300, 35
+            );
+
+            // Paddles
+            ctx.fillRect(player.x, player.y, player.w, player.h);
+            ctx.fillRect(enemy.x, enemy.y, enemy.w, enemy.h);
+
+            // Ball
+            ctx.beginPath();
+            ctx.arc(
+                ball.x + ball.w / 2,
+                ball.y + ball.h / 2,
+                8, 0, Math.PI * 2
+            );
+            ctx.fill();
+        }
+
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        gameLoop();
+    </script>
+</body>
+</html>
